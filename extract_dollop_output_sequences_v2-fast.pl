@@ -2,8 +2,10 @@
 use strict;
 use warnings;
 
+use autodie;
 use Cwd;               # Gets pathname of current working directory
 use File::Basename;    # Remove path information and extract 8.3 filename
+use Getopt::Std;
 
 # This script parses the ancestral state output from a DOLLOP (phylip) analysis in 4 ways.
 # I) It first takes the "outfile" from DOLLOP and makes a phylip-like output file,
@@ -22,31 +24,73 @@ use File::Basename;    # Remove path information and extract 8.3 filename
 # https://github.com/adamsardar/perl-libs-custom/blob/master/Supfam/Phylip_Ancestral_States_Parser.pm
 # This borrows a little wisdom from Adam's parser but I did not want to start importing tree hashes etc
 
-our $EMPTY = q{};
+our $EMPTY       = q{};
 our $WORKING_DIR = getcwd;
+our $VERSION     = '2015-04-23';
+our $NUM_STATES  = $EMPTY;
 
 # Files
-my $dollop_outfile = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
-my $groups_files   = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
-our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
+my $dollop_outfile =
+  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
+my $groups_files =
+  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
+our $ALIGNMENTS_DIR =
+  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
 # User Variables
 my $number_of_states = "9881";
 
 # Other Variables - Do not change
 my $number_of_char_lines = int( $number_of_states / 40 );
-my $count = 0;
+my $count                = 0;
 
 my @groups = get_groups("$groups_files");
 
-convert_to_phylip_style($dollop_outfile);
+# Commandline Options!
 
-report_counts_old_style("$dollop_outfile\.phy");
-report_counts_nodes("$dollop_outfile\.phy");
+my %options = ();
+getopts( 'i:s:g:h', \%options ) or display_help();
 
-get_group_from_position("$dollop_outfile\.phy");
+if ( $options{h} ) { display_help(); }
+if ( $options{v} ) { print "DOLLOP Extract $VERSION\n"; }
 
-get_alignments_for_group();
+if ( defined $options{i} && defined $options{s} && defined $options{g} && defined $options{o} ) {
+
+    if ( defined $options{c} ) {
+
+        #convert_to_phylip_style($dollop_outfile);
+    }
+
+    if ( defined $options{r} ) {
+
+        #require phylip-like file
+        #report_counts_nodes("$dollop_outfile\.phy");
+    }
+
+    if ( defined $options{R} ) {
+
+        #require phylip-like file
+        #report_counts_old_style("$dollop_outfile\.phy");
+    }
+
+    if (defined $options{l}) {
+        #get_group_from_position("$dollop_outfile\.phy");
+    }
+
+    if (defined $options{f} && defined $options{d}) {
+        #get_alignments_for_group();
+    }
+}
+
+sub display_help {
+    print "Usage:\nRequired Options:\n";
+    print "-i Dollop outfile\n-s Number of states (orthogroups)\n-g Ortholog Group List\n-o Output Directory";
+    print "Other Options:\n";
+    print "-c Convert to Phylip-like File\n-r New-style Report (includes internal tree node numbers)\n";
+    print "-R Old-style report (between-nodes from dollop outfile)\n";
+    print "-l Lists of Core/Losses/Gains\n-f Get .fasta files for groups from directory -d\n-d .fasta directory\n";
+    exit(1);
+}
 
 sub get_group_from_position {
 
@@ -169,7 +213,7 @@ sub get_alignments_for_group {
 
             # Read in file contents to array - it should only be one line.
             open my $core_in, '<', "$x\/core\.txt";
-            my @line = split (/\s+/, <$core_in>);
+            my @line = split( /\s+/, <$core_in> );
             close($core_in);
 
             # Foreach array element, get the corresponding file
@@ -267,10 +311,10 @@ sub convert_to_phylip_style {
         chomp($line);
 
         # skip blank lines to speed up location finding
-        next if ( $line =~ m/^[\s\t]*$/);
+        next if ( $line =~ m/^[\s\t]*$/ );
 
         # skip to the correct location in the file - avoid the reversion table ifexists
-        if ( $line =~ m/( . means same as in the node below it on tree)/g ) { 
+        if ( $line =~ m/( . means same as in the node below it on tree)/g ) {
             $correct_location = 1;
         }
 
@@ -288,13 +332,17 @@ sub convert_to_phylip_style {
                 # Note the different positions in the array, as we split on space
                 if ( $node[0] eq 'root' ) {
                     print $dollop_phylip "$node[0]\_\_$node[1]";
+
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line = $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
+                    $concat_line =
+                      $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
                 }
                 else {
                     print $dollop_phylip "$node[1]\_\_$node[2]";
+
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line = $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
+                    $concat_line =
+                      $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
                 }
             }
             else {
@@ -307,10 +355,10 @@ sub convert_to_phylip_style {
                 print $dollop_phylip "\t$concat_line\n";
 
                 # empty the concatened lines for the next set
-                $concat_line    = $EMPTY;
+                $concat_line = $EMPTY;
             }
             $count++;
-        }       
+        }
     }
     print "\n";
 }
