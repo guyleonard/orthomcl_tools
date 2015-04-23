@@ -22,27 +22,25 @@ our $EMPTY = q{};
 # Files
 my $dollop_outfile = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
 my $groups_files   = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
+our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
 # User Variables
 my $number_of_states = "9881";
 
 # Other Variables - Do not change
-#my $concat_line          = "";
 my $number_of_char_lines = int( $number_of_states / 40 );
-print "$number_of_char_lines\n";
 my $count = 0;
-
-&convert_to_phylip_style($dollop_outfile);
-
-#&report_counts("$dollop_outfile\.phy");
 
 my @groups = get_groups("$groups_files");
 
-#&get_group_from_position("$dollop_outfile\.phy");
+convert_to_phylip_style($dollop_outfile);
 
-our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
+report_counts_old_style("$dollop_outfile\.phy");
+report_counts_nodes("$dollop_outfile\.phy");
 
-#get_alignments_for_group();
+get_group_from_position("$dollop_outfile\.phy");
+
+get_alignments_for_group();
 
 sub get_group_from_position {
 
@@ -64,7 +62,6 @@ sub get_group_from_position {
         my @split_line = split( /[\s\t]/, $line );
         my $node       = $split_line[0];
         my $results    = $split_line[1];
-        $results =~ s/yes//g;
 
         # split the results into chars - each char is a position within the
         # groups array...
@@ -74,22 +71,16 @@ sub get_group_from_position {
         my @loss = ();
         my @core = ();
 
-        # There was an "out-by-two" error in the nodes being output
-        # i had to +5 to the X position to correct for this
-        # 3 from the 'yes' stripped from the output
-        # 1 to count itself
-        # and 1 to counter the zero-start position of an array e.g. 0..9 = 10
-
-        for ( my $x = 0 ; $x <= $#results_array ; $x++ ) {
+        for ( my $x = 1 ; $x <= $#results_array ; $x++ ) {
 
             if ( $results_array[$x] eq "." ) {
-                push( @core, "$groups[$x+5]" );
+                push( @core, "$groups[$x]" );
             }
             elsif ( $results_array[$x] eq "1" ) {
-                push( @gain, "$groups[$x+5]" );
+                push( @gain, "$groups[$x]" );
             }
             elsif ( $results_array[$x] eq "0" ) {
-                push( @loss, "$groups[$x+5]" );
+                push( @loss, "$groups[$x]" );
             }
         }
 
@@ -167,21 +158,21 @@ sub get_alignments_for_group {
             ## Core
             #
             # Make a directory for alignments to be placed
-            #mkdir "$x\/core" unless -d "$x\/core";
-            #print "\tMaking core directory\n\tCopying";
+            mkdir "$x\/core" unless -d "$x\/core";
+            print "\tMaking core directory\n\tCopying";
 
             # Read in file contents to array - it should only be one line.
-            #open my $core_in, '<', "$x\/core\.txt";
-            #my @line = split (/\s+/, <$core_in>);
-            #close($core_in);
+            open my $core_in, '<', "$x\/core\.txt";
+            my @line = split (/\s+/, <$core_in>);
+            close($core_in);
 
             # Foreach array element, get the corresponding file
             # from the alignments dir...
-            #foreach my $y (@line) {
-            #    system "cp $ALIGNMENTS_DIR\/$y\.fasta $x\/core";
-            #    print ".";
-            #}
-            #print "\n\n";
+            foreach my $y (@line) {
+                system "cp $ALIGNMENTS_DIR\/$y\.fasta $x\/core";
+                print ".";
+            }
+            print "\n\n";
         }
     }
 
@@ -199,10 +190,37 @@ sub get_groups {
     return @groups;
 }
 
-sub report_counts {
+sub report_counts_nodes {
 
     my $dollop_phylip = shift;
-    print "\tCounting\n";
+    print "Counting (tree node style)\n";
+    open my $dollop_phylip_in, '<', "$dollop_phylip";
+
+    open my $report, '>', "$dollop_phylip\_report\.txt";
+    print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
+
+    foreach my $line (<$dollop_phylip_in>) {
+        chomp($line);
+        next if ( $line =~ m/^\s+/ );
+
+        my @line_array = split( /\t/, $line );
+
+        my @nodes = split( /\_\_/, $line_array[0] );
+
+        # Count number of '.', '0', and '1' in concat_line.
+        # '.' = shared, '0' = loss, '1' = gain
+        my $dot_count  = () = $line_array[1] =~ m/[\.]/g;
+        my $one_count  = () = $line_array[1] =~ m/[1]/g;
+        my $zero_count = () = $line_array[1] =~ m/[0]/g;
+
+        print $report "$nodes[0]\t$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
+    }
+}
+
+sub report_counts_old_style {
+
+    my $dollop_phylip = shift;
+    print "Counting (old-style)\n";
     open my $dollop_phylip_in, '<', "$dollop_phylip";
 
     open my $report, '>', "$dollop_phylip\_report\.txt";
@@ -245,7 +263,7 @@ sub convert_to_phylip_style {
         # skip blank lines to speed up location finding
         next if ( $line =~ m/^[\s\t]*$/);
 
-        #if ( $line =~ m/means same as in the node below it on tree/g ) {
+        # skip to the correct location in the file - avoid the reversion table ifexists
         if ( $line =~ m/( . means same as in the node below it on tree)/g ) { 
             $correct_location = 1;
         }
