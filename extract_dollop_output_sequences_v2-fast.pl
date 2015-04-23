@@ -4,20 +4,26 @@ use warnings;
 
 use Cwd;               # Gets pathname of current working directory
 use File::Basename;    # Remove path information and extract 8.3 filename
-use Data::Dumper;
 
-our $WORKING_DIR = getcwd;
+# This script parses the ancestral state output from a DOLLOP (phylip) analysis in 4 ways.
+# I) It first takes the "outfile" from DOLLOP and makes a phylip-like output file,
+# all further parsing then works from this file.
+# II) A report can be output to show the Shares, Losses and Gains at each node in two
+# format styles: 1) between nodes as represented in the "outfile" e.g. "node1__node2"
+# or 2) as the nodes are represented when you import in to the R package ggtree e.g.
+# 1...n for internal nodes and 'xxxx' (leaf name) for leaves.
+# III) A set of three files are output in to a nodes directory for each node, with
+# a list of each orthogroup gained, lost or 'shared'
+# IV) This then, if you have a set of fasta alignments of your orthogroups, copies
+# them to the relevant nodes folder.
 
-# This here script will attempt to parse the ancestral state output from a DOLLOP (phylip) analysis
-# It's a horrible format and I had attempted to parse it and so had Adam Sardar (who also found it a nightmare)
+# DOLLOP Output Format
+# It's not an easy format to parse, Adam Sardar wrote a parser
 # https://github.com/adamsardar/perl-libs-custom/blob/master/Supfam/Phylip_Ancestral_States_Parser.pm
-# I chose to just continue with the script I had already as I did not want to start importing tree hashes etc
-# But borrow a little wisdom from Adam.
-
-# This script is actually going to first export the information about ancestral states
-# as a phylip-style file - which is infinitely easier to parse!
+# This borrows a little wisdom from Adam's parser but I did not want to start importing tree hashes etc
 
 our $EMPTY = q{};
+our $WORKING_DIR = getcwd;
 
 # Files
 my $dollop_outfile = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
