@@ -31,6 +31,7 @@ our $NUM_STATES     = $EMPTY;
 our $DOLLOP_OUTFILE = $EMPTY;
 our $GROUPS_FILE    = $EMPTY;
 our $OUT_DIR        = $EMPTY;
+our $PHY_FILE       = $EMPTY;
 
 # Files
 # my $dollop_outfile ="/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
@@ -49,7 +50,7 @@ my @groups = get_groups("$groups_files");
 # Commandline Options!
 
 my %options = ();
-getopts( 'i:s:o:crRlgfdh', \%options ) or display_help();
+getopts( 'i:s:o:cp:nrlg:fd:h', \%options ) or display_help();
 
 if ( $options{h} ) { display_help(); }
 if ( $options{v} ) { print "DOLLOP Extract $VERSION\n"; }
@@ -62,19 +63,35 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
 
     if ( defined $options{c} ) {
 
-        convert_to_phylip_style( $DOLLOP_OUTFILE, $NUM_STATES, $OUT_DIR );
+        $PHY_FILE = convert_to_phylip_style( $DOLLOP_OUTFILE, $NUM_STATES, $OUT_DIR );
+    }
+
+    if ( defined $options{n} ) {
+
+        if ( $PHY_FILE ne $EMPTY ) {
+            print "Automatic phylip-like file ($PHY_FILE) from -c option\n";
+            report_counts_nodes( $PHY_FILE, $OUT_DIR );
+        }
+        elsif ( defined $options{p} ) {
+
+            print "User supplied phylip-like file\n";
+            $PHY_FILE = $options{p};
+            report_counts_nodes( $PHY_FILE, $OUT_DIR );
+        }
     }
 
     if ( defined $options{r} ) {
 
-        #require phylip-like file
-        #report_counts_nodes("$dollop_outfile\.phy");
-    }
+        if ( $PHY_FILE ne $EMPTY ) {
+            print "Automatic phylip-like file ($PHY_FILE) from -c option\n";
+            report_counts_old_style( $PHY_FILE, $OUT_DIR );
+        }
+        elsif ( defined $options{p} ) {
 
-    if ( defined $options{R} ) {
-
-        #require phylip-like file
-        #report_counts_old_style("$dollop_outfile\.phy");
+            print "User supplied phylip-like file\n";
+            $PHY_FILE = $options{p};
+            report_counts_old_style( $PHY_FILE, $OUT_DIR );
+        }
     }
 
     if ( defined $options{l} && defined $options{g} ) {
@@ -88,16 +105,17 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
     }
 }
 else {
+
     display_help();
 }
 
 sub display_help {
-    print "Usage:\nRequired Options:\n";
+    print "Usage:\nRequired Input Files:\n";
     print "\t-i Dollop outfile\n\t-s Number of states (orthogroups)\n\t-o Output Directory";
-    print "\nOther Options:\n";
+    print "\nOther Options (one or all required):\n";
     print "\t-c Convert to Phylip-like File\n\t-r New-style Report (includes internal tree node numbers)\n";
     print "\t-R Old-style report (between-nodes from dollop outfile)\n\t-g Ortholog Group List\n";
-    print "\t-l Lists of Core/Losses/Gains\n\t-f Get .fasta files for groups from directory\n\t-d The *.fasta directory\n";
+    print "\t-l Lists of Core/Losses/Gains (requires -g)\n\t-f Get .fasta files for groups from directory (requires -d)\n\t-d The *.fasta directory\n";
     exit(1);
 }
 
@@ -234,7 +252,6 @@ sub get_alignments_for_group {
             print "\n\n";
         }
     }
-
 }
 
 sub get_groups {
@@ -279,10 +296,14 @@ sub report_counts_nodes {
 sub report_counts_old_style {
 
     my $dollop_phylip = shift;
+    my $output_dir    = shift;
+
     print "Counting (old-style)\n";
     open my $dollop_phylip_in, '<', "$dollop_phylip";
 
-    open my $report, '>', "$dollop_phylip\_report\.txt";
+    my ( $file, $dir, $ext ) = fileparse $dollop_phylip, '\.*';
+
+    open my $report, '>', "$output_dir\/$file\_report\.txt";
     print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
 
     foreach my $line (<$dollop_phylip_in>) {
@@ -316,7 +337,7 @@ sub convert_to_phylip_style {
 
     my ( $file, $dir, $ext ) = fileparse $dollop_outfile, '\.*';
 
-    open my $dollop_phylip, '>', "$OUT_DIR\/$file\.phy";
+    open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
     print $dollop_phylip " 0 $number_of_states\n";    # need to add number of nodes...
 
     my $correct_location = 0;
@@ -373,4 +394,6 @@ sub convert_to_phylip_style {
         }
     }
     print "\n";
+
+    return "$out_dir\/$file\.phy";
 }
