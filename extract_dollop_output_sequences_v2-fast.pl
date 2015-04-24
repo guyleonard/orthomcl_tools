@@ -35,16 +35,13 @@ our $PHY_FILE       = $EMPTY;
 
 # Files
 # my $dollop_outfile ="/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
-my $groups_files = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
+# my $groups_files = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
 our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
 # Other Variables - Do not change
-my $count                = 0;
-
-my @groups = get_groups("$groups_files");
+my $count = 0;
 
 # Commandline Options!
-
 my %options = ();
 getopts( 'i:s:o:cp:nrlg:fd:h', \%options ) or display_help();
 
@@ -94,10 +91,22 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
 
     if ( defined $options{l} && defined $options{g} ) {
 
-        #get_group_from_position("$dollop_outfile\.phy");
+        $GROUPS_FILE = $options{g};
+        my @groups = get_groups($GROUPS_FILE);
+
+        if ( $PHY_FILE ne $EMPTY ) {
+            get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
+        }
+        elsif ( defined $options{p} ) {
+            $PHY_FILE = $options{p};
+            get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
+        }
+
     }
 
     if ( defined $options{f} && defined $options{d} ) {
+
+        #my @groups = get_groups("$groups_files");
 
         #get_alignments_for_group();
     }
@@ -119,10 +128,14 @@ sub display_help {
 
 sub get_group_from_position {
 
-    my $phylip_file = shift;
+    my ( $groups_array_ref, $phylip_file, $out_dir ) = @_;
+    my @groups = @{$groups_array_ref};
+
     open my $results_infile, '<', "$phylip_file";
 
-    my $nodes_dir = "$WORKING_DIR\/nodes";
+    my ( $file, $dir, $ext ) = fileparse $phylip_file, '\.*';
+
+    my $nodes_dir = "$out_dir\/nodes";
 
     mkdir $nodes_dir unless -d $nodes_dir;
 
@@ -158,11 +171,6 @@ sub get_group_from_position {
                 push( @loss, "$groups[$x]" );
             }
         }
-
-        # $# need + 1
-        open my $general_report, '>>', "$nodes_dir\/general_report\.txt";
-        print $general_report "$node\t" . ( $#core + 1 ) . "\t" . ( $#gain + 1 ) . "\t" . ( $#loss + 1 ) . "\n";
-        print "$node\t" . ( $#core + 1 ) . "\t" . ( $#gain + 1 ) . "\t" . ( $#loss + 1 ) . "\n";
 
         my $node_dir = "$nodes_dir\/$node";
         mkdir $node_dir unless -d $node_dir;
@@ -264,6 +272,8 @@ sub get_groups {
     return @groups;
 }
 
+# this needs work to output the node numbers
+# rather than between nodes style...
 sub report_counts_nodes {
 
     my $dollop_phylip = shift;
@@ -324,17 +334,19 @@ sub report_counts_old_style {
 
 sub convert_to_phylip_style {
 
-    my $dollop_outfile   = shift;
-    my $number_of_states = shift;
-    my $out_dir          = shift;
+    my $dollop_outfile       = shift;
+    my $number_of_states     = shift;
+    my $out_dir              = shift;
     my $number_of_char_lines = shift;
-    my $concat_line      = $EMPTY;
+    my $concat_line          = $EMPTY;
 
     print "Parsing: $dollop_outfile\n";
 
     open my $dollop_outfile_read, '<', "$dollop_outfile";
 
     my ( $file, $dir, $ext ) = fileparse $dollop_outfile, '\.*';
+
+    mkdir $out_dir unless -d $out_dir;
 
     open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
     print $dollop_phylip " 0 $number_of_states\n";    # need to add number of nodes...
