@@ -24,18 +24,18 @@ use Getopt::Std;
 # https://github.com/adamsardar/perl-libs-custom/blob/master/Supfam/Phylip_Ancestral_States_Parser.pm
 # This borrows a little wisdom from Adam's parser but I did not want to start importing tree hashes etc
 
-our $EMPTY       = q{};
-our $WORKING_DIR = getcwd;
-our $VERSION     = '2015-04-23';
-our $NUM_STATES  = $EMPTY;
+our $EMPTY          = q{};
+our $WORKING_DIR    = getcwd;
+our $VERSION        = '2015-04-23';
+our $NUM_STATES     = $EMPTY;
+our $DOLLOP_OUTFILE = $EMPTY;
+our $GROUPS_FILE    = $EMPTY;
+our $OUT_DIR        = $EMPTY;
 
 # Files
-my $dollop_outfile =
-  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
-my $groups_files =
-  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
-our $ALIGNMENTS_DIR =
-  "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
+# my $dollop_outfile ="/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
+my $groups_files = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
+our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
 # User Variables
 my $number_of_states = "9881";
@@ -49,16 +49,20 @@ my @groups = get_groups("$groups_files");
 # Commandline Options!
 
 my %options = ();
-getopts( 'i:s:g:h', \%options ) or display_help();
+getopts( 'i:s:o:crRlgfdh', \%options ) or display_help();
 
 if ( $options{h} ) { display_help(); }
 if ( $options{v} ) { print "DOLLOP Extract $VERSION\n"; }
 
-if ( defined $options{i} && defined $options{s} && defined $options{g} && defined $options{o} ) {
+if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
+
+    $DOLLOP_OUTFILE = $options{i};
+    $NUM_STATES     = $options{s};
+    $OUT_DIR        = $options{o};
 
     if ( defined $options{c} ) {
 
-        #convert_to_phylip_style($dollop_outfile);
+        convert_to_phylip_style( $DOLLOP_OUTFILE, $NUM_STATES, $OUT_DIR );
     }
 
     if ( defined $options{r} ) {
@@ -73,22 +77,27 @@ if ( defined $options{i} && defined $options{s} && defined $options{g} && define
         #report_counts_old_style("$dollop_outfile\.phy");
     }
 
-    if (defined $options{l}) {
+    if ( defined $options{l} && defined $options{g} ) {
+
         #get_group_from_position("$dollop_outfile\.phy");
     }
 
-    if (defined $options{f} && defined $options{d}) {
+    if ( defined $options{f} && defined $options{d} ) {
+
         #get_alignments_for_group();
     }
+}
+else {
+    display_help();
 }
 
 sub display_help {
     print "Usage:\nRequired Options:\n";
-    print "-i Dollop outfile\n-s Number of states (orthogroups)\n-g Ortholog Group List\n-o Output Directory";
-    print "Other Options:\n";
-    print "-c Convert to Phylip-like File\n-r New-style Report (includes internal tree node numbers)\n";
-    print "-R Old-style report (between-nodes from dollop outfile)\n";
-    print "-l Lists of Core/Losses/Gains\n-f Get .fasta files for groups from directory -d\n-d .fasta directory\n";
+    print "\t-i Dollop outfile\n\t-s Number of states (orthogroups)\n\t-o Output Directory";
+    print "\nOther Options:\n";
+    print "\t-c Convert to Phylip-like File\n\t-r New-style Report (includes internal tree node numbers)\n";
+    print "\t-R Old-style report (between-nodes from dollop outfile)\n\t-g Ortholog Group List\n";
+    print "\t-l Lists of Core/Losses/Gains\n\t-f Get .fasta files for groups from directory\n\t-d The *.fasta directory\n";
     exit(1);
 }
 
@@ -296,14 +305,19 @@ sub report_counts_old_style {
 
 sub convert_to_phylip_style {
 
-    my $dollop_outfile = shift;
-    my $concat_line    = $EMPTY;
+    my $dollop_outfile   = shift;
+    my $number_of_states = shift;
+    my $out_dir          = shift;
+    my $concat_line      = $EMPTY;
 
     print "Parsing: $dollop_outfile\n";
 
     open my $dollop_outfile_read, '<', "$dollop_outfile";
-    open my $dollop_phylip,       '>', "$dollop_outfile\.phy";
-    print $dollop_phylip " 0 $number_of_states\n";    #need to add number of nodes...
+
+    my ( $file, $dir, $ext ) = fileparse $dollop_outfile, '\.*';
+
+    open my $dollop_phylip, '>', "$OUT_DIR\/$file\.phy";
+    print $dollop_phylip " 0 $number_of_states\n";    # need to add number of nodes...
 
     my $correct_location = 0;
 
@@ -334,15 +348,13 @@ sub convert_to_phylip_style {
                     print $dollop_phylip "$node[0]\_\_$node[1]";
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line =
-                      $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
+                    $concat_line = $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
                 }
                 else {
                     print $dollop_phylip "$node[1]\_\_$node[2]";
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line =
-                      $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
+                    $concat_line = $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
                 }
             }
             else {
