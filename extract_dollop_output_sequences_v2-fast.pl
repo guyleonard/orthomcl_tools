@@ -32,18 +32,15 @@ our $DOLLOP_OUTFILE = $EMPTY;
 our $GROUPS_FILE    = $EMPTY;
 our $OUT_DIR        = $EMPTY;
 our $PHY_FILE       = $EMPTY;
+our $NODES_DIR      = $EMPTY;
+our $ALIGN_DIR      = $EMPTY;
 
 # Files
-# my $dollop_outfile ="/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/outfile.old";
-# my $groups_files = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
-our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
-
-# Other Variables - Do not change
-my $count = 0;
+# our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
 # Commandline Options!
 my %options = ();
-getopts( 'i:s:o:cp:nrlg:fd:h', \%options ) or display_help();
+getopts( 'i:s:o:cp:nrlg:fd:n:h', \%options ) or display_help();
 
 if ( $options{h} ) { display_help(); }
 if ( $options{v} ) { print "DOLLOP Extract $VERSION\n"; }
@@ -95,20 +92,31 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
         my @groups = get_groups($GROUPS_FILE);
 
         if ( $PHY_FILE ne $EMPTY ) {
-            get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
+            print "Automatic phylip-like file ($PHY_FILE) from -c option\n";
+            $NODES_DIR = get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
         }
         elsif ( defined $options{p} ) {
+            print "User supplied phylip-like file\n";
             $PHY_FILE = $options{p};
-            get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
+            $NODES_DIR = get_group_from_position( \@groups, $PHY_FILE, $OUT_DIR );
         }
 
     }
 
     if ( defined $options{f} && defined $options{d} ) {
 
-        #my @groups = get_groups("$groups_files");
+        $ALIGN_DIR = $options{d};
 
-        #get_alignments_for_group();
+        if ( $NODES_DIR ne $EMPTY ) {
+            print "Auto Nodes Directory from -l output\n";
+            get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR );
+        }
+        elsif ( defined $options{n} ) {
+
+            print "User supplied Nodes Directory\n";
+            $NODES_DIR = $options{n};
+            get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR );
+        }
     }
 }
 else {
@@ -117,12 +125,14 @@ else {
 }
 
 sub display_help {
-    print "Usage:\nRequired Input Files:\n";
+    print "Usage for $VERSION:\nMandatory Input:\n";
     print "\t-i Dollop outfile\n\t-s Number of states (orthogroups)\n\t-o Output Directory";
     print "\nOther Options (one or all required):\n";
-    print "\t-c Convert to Phylip-like File\n\t-r New-style Report (includes internal tree node numbers)\n";
-    print "\t-R Old-style report (between-nodes from dollop outfile)\n\t-g Ortholog Group List\n";
-    print "\t-l Lists of Core/Losses/Gains (requires -g)\n\t-f Get .fasta files for groups from directory (requires -d)\n\t-d The *.fasta directory\n";
+    print "outfile to phylip-like:\n\t-c Convert to Phylip-like File (not needed if using -p)\n";
+    print "Report Tables:\n\t-n New-style Report (includes internal tree node numbers)\n\t-r Old-style report (between-nodes from dollop outfile)\n";
+    print "Structured Lists:\n\t-l Lists of Core/Losses/Gains (requires -g)\n\t-g Ortholog Group List\n\t-p phylip-like file (unless -c)\n";
+    print "Sequence Collation:\n\t-f Get .fasta files for groups from directory (requires -d)\n\t-d The *.fasta directory\n\t-n Nodes directory (unless -l)\n";
+    print "e.g. Equivalent: program.pl -i input -s number -o output -cr -l -g list.txt or program.pl -i input -s number -o output -rl -g list.txt -p phylip-like.phy\n";
     exit(1);
 }
 
@@ -183,11 +193,17 @@ sub get_group_from_position {
         print $loss_report "@loss";
 
     }
+
+    return "$nodes_dir";
 }
 
 sub get_alignments_for_group {
 
-    my $nodes_dir = "$WORKING_DIR\/nodes";
+    my $alignments_dir = shift;
+    my $nodes_dir = shift;
+    my $out_dir        = shift;
+
+    #my $nodes_dir = "$WORKING_DIR\/nodes";
 
     # Get a list of everything in dir - also reads in files...
     my @node_subdirs = glob "$nodes_dir/*";
@@ -213,7 +229,7 @@ sub get_alignments_for_group {
             # Foreach array element, get the corresponding file
             # from the alignments dir...
             foreach my $y (@gain_line) {
-                system "cp $ALIGNMENTS_DIR\/$y\.fasta $x\/gain";
+                system "cp $alignments_dir\/$y\.fasta $x\/gain";
                 print "+";
             }
             print "\n\n";
@@ -232,7 +248,7 @@ sub get_alignments_for_group {
             # Foreach array element, get the corresponding file
             # from the alignments dir...
             foreach my $y (@loss_line) {
-                system "cp $ALIGNMENTS_DIR\/$y\.fasta $x\/loss";
+                system "cp $alignments_dir\/$y\.fasta $x\/loss";
                 print "-";
             }
             print "\n\n";
@@ -252,7 +268,7 @@ sub get_alignments_for_group {
             # Foreach array element, get the corresponding file
             # from the alignments dir...
             foreach my $y (@line) {
-                system "cp $ALIGNMENTS_DIR\/$y\.fasta $x\/core";
+                system "cp $alignments_dir\/$y\.fasta $x\/core";
                 print ".";
             }
             print "\n\n";
@@ -339,6 +355,7 @@ sub convert_to_phylip_style {
     my $out_dir              = shift;
     my $number_of_char_lines = shift;
     my $concat_line          = $EMPTY;
+    my $count                = 0;
 
     print "Parsing: $dollop_outfile\n";
 
