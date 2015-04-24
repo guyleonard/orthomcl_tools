@@ -38,11 +38,7 @@ our $PHY_FILE       = $EMPTY;
 my $groups_files = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/group_list.txt";
 our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
 
-# User Variables
-my $number_of_states = "9881";
-
 # Other Variables - Do not change
-my $number_of_char_lines = int( $number_of_states / 40 );
 my $count                = 0;
 
 my @groups = get_groups("$groups_files");
@@ -61,9 +57,11 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
     $NUM_STATES     = $options{s};
     $OUT_DIR        = $options{o};
 
+    my $number_of_char_lines = int( $NUM_STATES / 40 );
+
     if ( defined $options{c} ) {
 
-        $PHY_FILE = convert_to_phylip_style( $DOLLOP_OUTFILE, $NUM_STATES, $OUT_DIR );
+        $PHY_FILE = convert_to_phylip_style( $DOLLOP_OUTFILE, $NUM_STATES, $OUT_DIR, $number_of_char_lines );
     }
 
     if ( defined $options{n} ) {
@@ -329,6 +327,7 @@ sub convert_to_phylip_style {
     my $dollop_outfile   = shift;
     my $number_of_states = shift;
     my $out_dir          = shift;
+    my $number_of_char_lines = shift;
     my $concat_line      = $EMPTY;
 
     print "Parsing: $dollop_outfile\n";
