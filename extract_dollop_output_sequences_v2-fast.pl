@@ -35,12 +35,9 @@ our $PHY_FILE       = $EMPTY;
 our $NODES_DIR      = $EMPTY;
 our $ALIGN_DIR      = $EMPTY;
 
-# Files
-# our $ALIGNMENTS_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes/alignments";
-
 # Commandline Options!
 my %options = ();
-getopts( 'i:s:o:cp:nrlg:fd:n:h', \%options ) or display_help();
+getopts( 'i:s:o:cp:nrlg:fd:n:xvh', \%options ) or display_help();
 
 if ( $options{h} ) { display_help(); }
 if ( $options{v} ) { print "DOLLOP Extract $VERSION\n"; }
@@ -108,14 +105,36 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
         $ALIGN_DIR = $options{d};
 
         if ( $NODES_DIR ne $EMPTY ) {
-            print "Auto Nodes Directory from -l output\n";
-            get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR );
+
+            if ( defined $options{x} ) {
+                print "Auto Nodes Directory from -l output\n";
+                print "Excluding \"core\" marked orthogroups\n";
+                my $exclude = "true";
+                get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
+            }
+            else {
+                print "Auto Nodes Directory from -l output\n";
+                print "Outputting \"core\" marked orthogroups\n";
+                my $exclude = "false";
+                get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
+            }
         }
         elsif ( defined $options{n} ) {
 
-            print "User supplied Nodes Directory\n";
-            $NODES_DIR = $options{n};
-            get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR );
+            if ( defined $options{x} ) {
+                print "User supplied Nodes Directory\n";
+                print "Excluding \"core\" marked orthogroups\n";
+                my $exclude = "true";
+                $NODES_DIR = $options{n};
+                get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
+            }
+            else {
+                print "User supplied Nodes Directory\n";
+                print "Outputting \"core\" marked orthogroups\n";
+                my $exclude = "false";
+                $NODES_DIR = $options{n};
+                get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
+            }
         }
     }
 }
@@ -132,6 +151,7 @@ sub display_help {
     print "Report Tables:\n\t-n New-style Report (includes internal tree node numbers)\n\t-r Old-style report (between-nodes from dollop outfile)\n";
     print "Structured Lists:\n\t-l Lists of Core/Losses/Gains (requires -g)\n\t-g Ortholog Group List\n\t-p phylip-like file (unless -c)\n";
     print "Sequence Collation:\n\t-f Get .fasta files for groups from directory (requires -d)\n\t-d The *.fasta directory\n\t-n Nodes directory (unless -l)\n";
+    print "\t-x Exclude \"core\" marked ortholog groups\n";
     print "e.g. Equivalent: program.pl -i input -s number -o output -cr -l -g list.txt or program.pl -i input -s number -o output -rl -g list.txt -p phylip-like.phy\n";
     exit(1);
 }
@@ -200,8 +220,9 @@ sub get_group_from_position {
 sub get_alignments_for_group {
 
     my $alignments_dir = shift;
-    my $nodes_dir = shift;
+    my $nodes_dir      = shift;
     my $out_dir        = shift;
+    my $exclude        = shift;
 
     #my $nodes_dir = "$WORKING_DIR\/nodes";
 
@@ -253,25 +274,28 @@ sub get_alignments_for_group {
             }
             print "\n\n";
 
-            # Default this to off, too many each time to cp
-            ## Core
-            #
-            # Make a directory for alignments to be placed
-            mkdir "$x\/core" unless -d "$x\/core";
-            print "\tMaking core directory\n\tCopying";
+            if ( $exclude eq "false" ) {
 
-            # Read in file contents to array - it should only be one line.
-            open my $core_in, '<', "$x\/core\.txt";
-            my @line = split( /\s+/, <$core_in> );
-            close($core_in);
+                # Default this to off, too many each time to cp
+                ## Core
+                #
+                # Make a directory for alignments to be placed
+                mkdir "$x\/core" unless -d "$x\/core";
+                print "\tMaking core directory\n\tCopying";
 
-            # Foreach array element, get the corresponding file
-            # from the alignments dir...
-            foreach my $y (@line) {
-                system "cp $alignments_dir\/$y\.fasta $x\/core";
-                print ".";
+                # Read in file contents to array - it should only be one line.
+                open my $core_in, '<', "$x\/core\.txt";
+                my @line = split( /\s+/, <$core_in> );
+                close($core_in);
+
+                # Foreach array element, get the corresponding file
+                # from the alignments dir...
+                foreach my $y (@line) {
+                    system "cp $alignments_dir\/$y\.fasta $x\/core";
+                    print ".";
+                }
+                print "\n\n";
             }
-            print "\n\n";
         }
     }
 }
