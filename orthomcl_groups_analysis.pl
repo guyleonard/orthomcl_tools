@@ -12,8 +12,18 @@ use Getopt::Std;
 # 1. Assemble all sequences from each Ortholog group into separate files
 # 2. Presence Absense Grid
 #   Is the genome represented in the ortholog group? 0 or 1
+#   Transposed-grid, phylip-like style.
 # 3. Count Grid
 #	How many representations (genes) are Present in each ortholog group 0...n
+
+our $EMPTY           = q{};
+our $WORKING_DIR     = getcwd;
+our $VERSION         = '2015-04-27';
+our $GOOD_PROTEINS   = $EMPTY;
+our $GROUPS_FILE     = $EMPTY;
+our $COMPLIANT_FASTA = $EMPTY;
+our $OUTPUT_DIR      = $EMPTY;
+our $VERBOSE         = $EMPTY;
 
 ####
 # Use this command to transpose the output....
@@ -28,12 +38,41 @@ my $groups_file = "$ORTHO_DIR\/groups\/groups.txt";
 my $compliant_fasta_dir   = "$ORTHO_DIR\/compliant_fasta";
 my @compliant_fasta_files = glob "$compliant_fasta_dir/*.fasta";
 
-# Methods
-#&collate_sequences( "$groups_file", "$good_proteins" );
+# Commandline Options!
+my %options = ();
+getopts( 'o:g:p:vh', \%options ) or display_help();
 
-&presence_absense_grid( "$groups_file", \@compliant_fasta_files );
+if ( $options{h} ) { display_help(); }
+if ( $options{v} ) { print "OrthoMCL Groups Analysis $VERSION\n"; }
 
-&count_grid( "$groups_file", \@compliant_fasta_files );
+if ( defined $options { o } ) {
+
+    $OUTPUT_DIR = $options{o};
+
+    if ( defined $options{g} && defined $options{p} ) {
+
+        $GROUPS_FILE   = $options{g};
+        $GOOD_PROTEINS = $options{p};
+
+        collate_sequences( $GROUPS_FILE, $GOOD_PROTEINS, $OUTPUT_DIR );
+    }
+
+    #&presence_absense_grid( "$groups_file", \@compliant_fasta_files );
+
+    #&count_grid( "$groups_file", \@compliant_fasta_files );
+
+}
+else {
+
+    display_help();
+}
+
+sub display_help {
+    print "Usage for $VERSION:\nMandatory Input:\n";
+    print "\t-o output directory\n";
+    print "Collate Sequences:\n\t-g orthoMCL groups.txt\n\t-p goodProteins.fasta\n";
+    exit 1;
+}
 
 sub presence_absense_grid {
     my $groups_file_list = $_[0];
@@ -43,12 +82,12 @@ sub presence_absense_grid {
         $file =~ s/$ORTHO_DIR\/compliant_fasta\///ig;
         $file =~ s/\.fasta//ig;
     }
+
     #print "Genomes:\n@genomes\n";
 
     open my $presence_absense_file, '>', "$ORTHO_DIR\/presence_absense_grid.csv";
     print $presence_absense_file "Ortho Group,";
     print $presence_absense_file join( ',', @genomes ), "\n";
-
 
     open my $groups_file, '<', "$groups_file_list";
     while ( my $line = <$groups_file> ) {
@@ -61,9 +100,11 @@ sub presence_absense_grid {
         foreach my $accession (@accessions) {
             $accession =~ m/(\w{4})\|/ig;
             $accession = $1;
+
             #print "$accession ";
             $count_hash{$accession} = 1;
         }
+
         #print "\n";
 
         print $presence_absense_file "$ortho_group,";
@@ -109,8 +150,10 @@ sub count_grid {
 
 sub collate_sequences {
 
-    my $groups_file_list = $_[0];
-    my $good_proteins    = $_[1];
+    my $groups_file_list = shift;
+    my $good_proteins    = shift;
+    my $output_dir       = shift;
+    my $alignments_dir   = "$output_dir\/alignments";
 
     # BioPerl to the rescue!
     my $inx = Bio::Index::Fasta->new( -filename => $good_proteins . ".idx", -write_flag => 1 );
@@ -122,42 +165,37 @@ sub collate_sequences {
     $inx->make_index($good_proteins);
 
     open my $groups_file, '<', "$groups_file_list";
+
     #while ( my $line = <$groups_file> ) {
     foreach my $line (<$groups_file>) {
+
         my @entries   = split( /\:\s{1}/, $line );
         my @accession = split( /\s+/,     $entries[1] );
 
-        #print "\n---\nRetreiving: Group: $entries[0]\n\nEntry: @accession\n---\n";
-        print "\n---\nRetreiving: Group: $entries[0] with $#accession seqs\n---\n";
+        print "\n\/----\nRetreiving: Group: $entries[0] with $#accession seqs\n";
 
-        # WE CAN NOT USE THESE TOOLS DUE TO USELESS NCBI INSISTENCE ON USING THEIR GODDAMN NAMING SCHEME
+        # We are using bioperl and indexing as fastacmd cannot handle non-NCBI fasta headers
         # See - http://blastedbio.blogspot.co.uk/2012/10/my-ids-not-good-enough-for-ncbi-blast.html
-        #my $results = `blastdbcmd -db $good_proteins -entry $entry -out $ORTHO_DIR\/alignments\/$entries[0]\.fasta`;
-        #my $results = `fastacmd -d $good_proteins -s $entry -o $ORTHO_DIR\/alignments\/$entries[0]\.fasta`;
 
-        # BioPERL to the RESCUE!
+        mkdir $alignments_dir unless -d $alignments_dir;
 
-        open my $file_out, '>>', "$ORTHO_DIR\/alignments\/$entries[0]\.fasta";
+        open my $file_out, '>>', "$alignments_dir\/$entries[0]\.fasta";
         for ( my $x = 0 ; $x <= $#accession ; $x++ ) {
 
-            #print "Getting: $accession[$x]\n";
-
-            my $seq = $inx->fetch("$accession[$x]");
-
+            my $seq       = $inx->fetch("$accession[$x]");
             my $seqstring = $seq->seq;
 
-            #my $desc = $db->header("$accession[$x]");
             print "$accession[$x],";
-
-            print $file_out ">$accession[$x]\n$seqstring\n";
+            print {$file_out} ">$accession[$x]\n$seqstring\n";
         }
-        print "\n----\n";
-        close($file_out);
-   }
+        print "\n\\----\n";
+        close $file_out;
+    }
 }
 
+# remove the chevron from the accession
 sub get_id {
     my $header = shift;
-    $header =~ /^>(.*)/;
-    $1;
+    $header =~ /^>(.*)/ism;
+    return $1;
 }
