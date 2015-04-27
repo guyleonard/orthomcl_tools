@@ -10,7 +10,7 @@ use Getopt::Std;
 # This script parses the ancestral state output from a DOLLOP (phylip) analysis in 4 ways.
 # I) It first takes the "outfile" from DOLLOP and makes a phylip-like output file,
 # all further parsing then works from this file.
-# II) A report can be output to show the Shares, Losses and Gains at each node in two
+# II) A report can be output to show the 'Shares', Losses and Gains at each node in two
 # format styles: 1) between nodes as represented in the "outfile" e.g. "node1__node2"
 # or 2) as the nodes are represented when you import in to the R package ggtree e.g.
 # 1...n for internal nodes and 'xxxx' (leaf name) for leaves.
@@ -312,8 +312,29 @@ sub get_groups {
     return @groups;
 }
 
-# this needs work to output the node numbers
-# rather than between nodes style...
+# Given a tree, below, it will have nodes/leafs
+# numbered in one of the two styles below...
+#     +-- taxa_1
+#  +-+|
+#--|  +-- taxa_2
+#  +----- taxa_3
+#
+# outfile from dollop
+#         +-- taxa_1
+#      +-+2
+#root--1  +-- taxa_2
+#      +----- taxa_3
+# reported as "root__1" or "2__taxa_2"
+#
+# In ggtree and other phylo-packages
+#     +-- 3 (taxa_1)
+#  +-+5
+#--4  +-- 2 (taxa_2)
+#  +----- 1 (taxa_3)
+# reported as "4" or "taxa_2"
+# As you will notice, internal nodes are 'total leaf number' + node number.
+# Total leaf number is equivalent to the number of taxa. This is the first
+# number present in a phylip-like format file...
 sub report_counts_nodes {
 
     my $dollop_phylip = shift;
@@ -379,6 +400,7 @@ sub convert_to_phylip_style {
     my $out_dir              = shift;
     my $number_of_char_lines = shift;
     my $concat_line          = $EMPTY;
+    my @output               = $EMPTY;
     my $count                = 0;
 
     print "Parsing: $dollop_outfile\n";
@@ -386,11 +408,6 @@ sub convert_to_phylip_style {
     open my $dollop_outfile_read, '<', "$dollop_outfile";
 
     my ( $file, $dir, $ext ) = fileparse $dollop_outfile, '\.*';
-
-    mkdir $out_dir unless -d $out_dir;
-
-    open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
-    print $dollop_phylip " 0 $number_of_states\n";    # need to add number of nodes...
 
     my $correct_location = 0;
 
@@ -418,16 +435,20 @@ sub convert_to_phylip_style {
 
                 # Note the different positions in the array, as we split on space
                 if ( $node[0] eq 'root' ) {
-                    print $dollop_phylip "$node[0]\_\_$node[1]";
+
+                    # leaf name
+                    $concat_line = "$node[0]\_\_$node[1]\t";
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line = $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
+                    $concat_line = $concat_line . $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
                 }
                 else {
-                    print $dollop_phylip "$node[1]\_\_$node[2]";
+
+                    # leaf name
+                    $concat_line = "$node[1]\_\_$node[2]\t";
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
-                    $concat_line = $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
+                    $concat_line = $concat_line . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
                 }
             }
             else {
@@ -437,7 +458,9 @@ sub convert_to_phylip_style {
             }
 
             if ( $count == $number_of_char_lines ) {
-                print $dollop_phylip "\t$concat_line\n";
+
+                #print $dollop_phylip "$concat_line\n";
+                push( @output, "$concat_line\n" );
 
                 # empty the concatened lines for the next set
                 $concat_line = $EMPTY;
@@ -446,6 +469,16 @@ sub convert_to_phylip_style {
         }
     }
     print "\n";
+
+    mkdir $out_dir unless -d $out_dir;
+
+    open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
+    print $dollop_phylip " $#output $number_of_states\n";
+
+    foreach (@output) {
+        print $dollop_phylip "$_";                             # Print each entry in our array to the file
+    }
+    close($dollop_phylip);
 
     return "$out_dir\/$file\.phy";
 }
