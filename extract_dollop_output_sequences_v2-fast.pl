@@ -209,10 +209,13 @@ sub get_group_from_position {
 
         open my $core_report, '>', "$node_dir\/core\.txt";
         print {$core_report} "@core";
+        close $core_report;
         open my $gain_report, '>', "$node_dir\/gain\.txt";
         print {$gain_report} "@gain";
+        close $gain_report;
         open my $loss_report, '>', "$node_dir\/loss\.txt";
         print {$loss_report} "@loss";
+        close loss_report;
 
     }
 
@@ -309,6 +312,7 @@ sub get_groups {
         chomp $line;
         push @groups, $line;
     }
+    close $group_infile;
     return @groups;
 }
 
