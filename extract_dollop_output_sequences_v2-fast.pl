@@ -215,7 +215,7 @@ sub get_group_from_position {
         close $gain_report;
         open my $loss_report, '>', "$node_dir\/loss\.txt";
         print {$loss_report} "@loss";
-        close loss_report;
+        close $loss_report;
 
     }
 
