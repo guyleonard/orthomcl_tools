@@ -109,13 +109,13 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
             if ( defined $options{x} ) {
                 print "Auto Nodes Directory from -l output\n";
                 print "Excluding \"core\" marked orthogroups\n";
-                my $exclude = "true";
+                my $exclude = 'true';
                 get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
             }
             else {
                 print "Auto Nodes Directory from -l output\n";
                 print "Outputting \"core\" marked orthogroups\n";
-                my $exclude = "false";
+                my $exclude = 'false';
                 get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
             }
         }
@@ -124,14 +124,14 @@ if ( defined $options{i} && defined $options{s} && defined $options{o} ) {
             if ( defined $options{x} ) {
                 print "User supplied Nodes Directory\n";
                 print "Excluding \"core\" marked orthogroups\n";
-                my $exclude = "true";
+                my $exclude = 'true';
                 $NODES_DIR = $options{n};
                 get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
             }
             else {
                 print "User supplied Nodes Directory\n";
                 print "Outputting \"core\" marked orthogroups\n";
-                my $exclude = "false";
+                my $exclude = 'false';
                 $NODES_DIR = $options{n};
                 get_alignments_for_group( $ALIGN_DIR, $NODES_DIR, $OUT_DIR, $exclude );
             }
@@ -153,7 +153,7 @@ sub display_help {
     print "Sequence Collation:\n\t-f Get .fasta files for groups from directory (requires -d)\n\t-d The *.fasta directory\n\t-n Nodes directory (unless -l)\n";
     print "\t-x Exclude \"core\" marked ortholog groups\n";
     print "e.g. Equivalent: program.pl -i input -s number -o output -cr -l -g list.txt or program.pl -i input -s number -o output -rl -g list.txt -p phylip-like.phy\n";
-    exit(1);
+    exit 1;
 }
 
 sub get_group_from_position {
@@ -174,18 +174,18 @@ sub get_group_from_position {
     while ( my $line = <$results_infile> ) {
 
         # skip blank lines, not needed but speeds up location finding a mite
-        next if ( $line =~ m/^[\s|\t]+/ );
+        next if ( $line =~ m/^[\s|\t]+/m );
 
         # Lines read in will look similar to below...gap may be space or tab
         # root_1    110100111.111..0
 
-        my @split_line = split( /[\s\t]/, $line );
+        my @split_line = split /[\s\t]/, $line;
         my $node       = $split_line[0];
         my $results    = $split_line[1];
 
         # split the results into chars - each char is a position within the
         # groups array...
-        my @results_array = split( //, $results );
+        my @results_array = split //, $results;
 
         my @gain = ();
         my @loss = ();
@@ -193,14 +193,14 @@ sub get_group_from_position {
 
         for ( my $x = 1 ; $x <= $#results_array ; $x++ ) {
 
-            if ( $results_array[$x] eq "." ) {
-                push( @core, "$groups[$x]" );
+            if ( $results_array[$x] eq '.' ) {
+                push @core, "$groups[$x]";
             }
-            elsif ( $results_array[$x] eq "1" ) {
-                push( @gain, "$groups[$x]" );
+            elsif ( $results_array[$x] eq '1' ) {
+                push @gain, "$groups[$x]";
             }
-            elsif ( $results_array[$x] eq "0" ) {
-                push( @loss, "$groups[$x]" );
+            elsif ( $results_array[$x] eq '0' ) {
+                push @loss, "$groups[$x]";
             }
         }
 
@@ -208,11 +208,11 @@ sub get_group_from_position {
         mkdir $node_dir unless -d $node_dir;
 
         open my $core_report, '>', "$node_dir\/core\.txt";
-        print $core_report "@core";
+        print {$core_report} "@core";
         open my $gain_report, '>', "$node_dir\/gain\.txt";
-        print $gain_report "@gain";
+        print {$gain_report} "@gain";
         open my $loss_report, '>', "$node_dir\/loss\.txt";
-        print $loss_report "@loss";
+        print {$loss_report} "@loss";
 
     }
 
@@ -244,14 +244,14 @@ sub get_alignments_for_group {
 
             # Read in file contents to array - it should only be one line.
             open my $gain_in, '<', "$x\/gain\.txt";
-            my @gain_line = split( /\s+/, <$gain_in> );
-            close($gain_in);
+            my @gain_line = split /\s+/, <$gain_in>;
+            close $gain_in;
 
             # Foreach array element, get the corresponding file
             # from the alignments dir...
             foreach my $y (@gain_line) {
                 system "cp $alignments_dir\/$y\.fasta $x\/gain";
-                print "+";
+                print '+';
             }
             print "\n\n";
 
@@ -263,18 +263,18 @@ sub get_alignments_for_group {
 
             # Read in file contents to array - it should only be one line.
             open my $loss_in, '<', "$x\/loss\.txt";
-            my @loss_line = split( /\s+/, <$loss_in> );
-            close($loss_in);
+            my @loss_line = split /\s+/, <$loss_in>;
+            close $loss_in;
 
             # Foreach array element, get the corresponding file
             # from the alignments dir...
             foreach my $y (@loss_line) {
                 system "cp $alignments_dir\/$y\.fasta $x\/loss";
-                print "-";
+                print '-';
             }
             print "\n\n";
 
-            if ( $exclude eq "false" ) {
+            if ( $exclude eq 'false' ) {
 
                 # Default this to off, too many each time to cp
                 ## Core
@@ -285,14 +285,14 @@ sub get_alignments_for_group {
 
                 # Read in file contents to array - it should only be one line.
                 open my $core_in, '<', "$x\/core\.txt";
-                my @line = split( /\s+/, <$core_in> );
-                close($core_in);
+                my @line = split /\s+/, <$core_in>;
+                close $core_in;
 
                 # Foreach array element, get the corresponding file
                 # from the alignments dir...
                 foreach my $y (@line) {
                     system "cp $alignments_dir\/$y\.fasta $x\/core";
-                    print ".";
+                    print '.';
                 }
                 print "\n\n";
             }
@@ -306,8 +306,8 @@ sub get_groups {
     my @groups = ();
     while (<$group_infile>) {
         my $line = $_;
-        chomp($line);
-        push( @groups, $line );
+        chomp $line;
+        push @groups, $line;
     }
     return @groups;
 }
@@ -343,10 +343,10 @@ sub report_counts_nodes {
     open my $dollop_phylip_in, '<', "$dollop_phylip";
 
     open my $report, '>', "$dollop_phylip\_newstyle_report\.txt";
-    print $report "Node\tShared\tLoss\tGain\n";
+    print {$report} "Node\tShared\tLoss\tGain\n";
 
     while ( my $line = <$dollop_phylip_in> ) {
-        chomp($line);
+        chomp $line;
 
         if ( $line =~ m/^\s+\d+\s+\d+\s+(\d+)/ ) {
             $num_nodes = $1;
@@ -354,13 +354,13 @@ sub report_counts_nodes {
 
         next if ( $line =~ m/^\s+/ );
 
-        my @line_array = split( /\t/, $line );
+        my @line_array = split /\t/, $line;
 
-        my @nodes = split( /\_\_/, $line_array[0] );
+        my @nodes = split /\_\_/, $line_array[0];
 
         # Count number of '.', '0', and '1' in concat_line.
         # '.' = shared, '0' = loss, '1' = gain
-        my $dot_count  = () = $line_array[1] =~ m/[\.]/g;
+        my $dot_count  = () = $line_array[1] =~ m/[.]/g;
         my $one_count  = () = $line_array[1] =~ m/[1]/g;
         my $zero_count = () = $line_array[1] =~ m/[0]/g;
 
@@ -370,10 +370,10 @@ sub report_counts_nodes {
 
             my $new_node = $nodes[1] + $num_nodes;
 
-            print $report "$new_node\t$dot_count\t$zero_count\t$one_count\n";
+            print {$report} "$new_node\t$dot_count\t$zero_count\t$one_count\n";
         }
         else {
-            print $report "$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
+            print {$report} "$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
         }
 
     }
@@ -390,23 +390,23 @@ sub report_counts_old_style {
     my ( $file, $dir, $ext ) = fileparse $dollop_phylip, '\.*';
 
     open my $report, '>', "$output_dir\/$file\_oldstyle_report\.txt";
-    print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
+    print {$report} "Node 1\tNode2\tShared\tLoss\tGain\n";
 
     while ( my $line = <$dollop_phylip_in> ) {
-        chomp($line);
+        chomp $line;
         next if ( $line =~ m/^\s+/ );
 
-        my @line_array = split( /\t/, $line );
+        my @line_array = split /\t/, $line;
 
-        my @nodes = split( /\_\_/, $line_array[0] );
+        my @nodes = split /\_\_/, $line_array[0];
 
         # Count number of '.', '0', and '1' in concat_line.
         # '.' = shared, '0' = loss, '1' = gain
-        my $dot_count  = () = $line_array[1] =~ m/[\.]/g;
+        my $dot_count  = () = $line_array[1] =~ m/[.]/g;
         my $one_count  = () = $line_array[1] =~ m/[1]/g;
         my $zero_count = () = $line_array[1] =~ m/[0]/g;
 
-        print $report "$nodes[0]\t$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
+        print {$report} "$nodes[0]\t$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
     }
 }
 
@@ -430,7 +430,7 @@ sub convert_to_phylip_style {
     my $correct_location = 0;
 
     while ( my $line = <$dollop_outfile_read> ) {
-        chomp($line);
+        chomp $line;
 
         # skip blank lines to speed up location finding
         next if ( $line =~ m/^[\s\t]*$/ );
@@ -445,11 +445,11 @@ sub convert_to_phylip_style {
             # if the lines starts with root or 2 spaces followed by a digit
             if ( $line =~ m/^(root|\s{2}\d+)\s+/gism ) {
 
-                print ".";
+                print '.';
                 $count = 0;
 
                 # Split line on white space
-                my @node = split( /\s+/, $line );
+                my @node = split /\s+/, $line;
 
                 # Note the different positions in the array, as we split on space
                 if ( $node[0] eq 'root' ) {
@@ -483,7 +483,7 @@ sub convert_to_phylip_style {
             }
 
             if ( $count == $number_of_char_lines ) {
-                push( @output, "$concat_line\n" );
+                push @output, "$concat_line\n";
 
                 # empty the concatened lines for the next set
                 $concat_line = $EMPTY;
@@ -496,12 +496,12 @@ sub convert_to_phylip_style {
     mkdir $out_dir unless -d $out_dir;
 
     open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
-    print $dollop_phylip " $#output $number_of_states $leaf_count\n";
+    print {$dollop_phylip} " $#output $number_of_states $leaf_count\n";
 
     foreach (@output) {
-        print $dollop_phylip "$_";
+        print {$dollop_phylip} "$_";
     }
-    close($dollop_phylip);
+    close $dollop_phylip;
 
     return "$out_dir\/$file\.phy";
 }
