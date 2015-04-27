@@ -169,7 +169,9 @@ sub get_group_from_position {
 
     mkdir $nodes_dir unless -d $nodes_dir;
 
-    foreach my $line (<$results_infile>) {
+    print "Writing node files\n";
+
+    while ( my $line = <$results_infile> ) {
 
         # skip blank lines, not needed but speeds up location finding a mite
         next if ( $line =~ m/^[\s|\t]+/ );
@@ -343,7 +345,7 @@ sub report_counts_nodes {
     open my $report, '>', "$dollop_phylip\_newstyle_report\.txt";
     print $report "Node\tShared\tLoss\tGain\n";
 
-    foreach my $line (<$dollop_phylip_in>) {
+    while ( my $line = <$dollop_phylip_in> ) {
         chomp($line);
 
         if ( $line =~ m/^\s+\d+\s+\d+\s+(\d+)/ ) {
@@ -390,7 +392,7 @@ sub report_counts_old_style {
     open my $report, '>', "$output_dir\/$file\_oldstyle_report\.txt";
     print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
 
-    foreach my $line (<$dollop_phylip_in>) {
+    while ( my $line = <$dollop_phylip_in> ) {
         chomp($line);
         next if ( $line =~ m/^\s+/ );
 
@@ -427,7 +429,7 @@ sub convert_to_phylip_style {
 
     my $correct_location = 0;
 
-    foreach my $line (<$dollop_outfile_read>) {
+    while ( my $line = <$dollop_outfile_read> ) {
         chomp($line);
 
         # skip blank lines to speed up location finding
