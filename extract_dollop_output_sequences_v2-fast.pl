@@ -224,8 +224,6 @@ sub get_alignments_for_group {
     my $out_dir        = shift;
     my $exclude        = shift;
 
-    #my $nodes_dir = "$WORKING_DIR\/nodes";
-
     # Get a list of everything in dir - also reads in files...
     my @node_subdirs = glob "$nodes_dir/*";
 
@@ -460,6 +458,8 @@ sub convert_to_phylip_style {
                     # Add the first line of dots, 0s and 1s to the concatenated line
                     $concat_line = $concat_line . $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
 
+                    # count a 'leaf node' if it is not a numerical value
+                    # leaf nodes should not have numerical values anyway...
                     if ( $node[1] !~ m/\d+/ ) { $leaf_count++; }
                 }
                 else {
@@ -470,6 +470,7 @@ sub convert_to_phylip_style {
                     # Add the first line of dots, 0s and 1s to the concatenated line
                     $concat_line = $concat_line . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
 
+                    # count a 'leaf node' if it is not a numerical value
                     if ( $node[2] !~ m/\d+/ ) { $leaf_count++; }
                 }
             }
