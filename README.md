@@ -1,6 +1,22 @@
 # orthomcl_tools
 A couple of tools I find indispensable for post orthomcl down-stream analysis.
 
+## orthomcl_groups_analysis.pl
+
+Run this script to:
+1. Collate all sequences from each ortholog group into separate FASTA files.
+2. Generate a Presence Absense Grid
+  1. Is the taxa/genome represented in the ortholog group? 0 or 1
+  2. Useful for Dollo Parsimony / ML analyses.
+3. Generate Count (tally) Grid
+  1. How many representations (genes) are present in each ortholog groups? 0...n
+
+```
+- orthomcl goodProteins.fasta
+- orthomcl groups.txt
+- orthomcl compliantFasta directory
+```
+
 ## extract_dollop_output_sequences_v2-fast.pl
 
 A program to take the "outfile" from a PHYLIP DOLLOP run and parse the output in to a more useful format. It requires two pieces of information: 1) the "outfile", and 2) the number of states being tested. For running with OrthoMCL data you will also need: 1) a list of orthogroup names, and 2) a directory with the *.fasta sequences of each orthogroup
@@ -37,6 +53,5 @@ e.g. Equivalent: program.pl -i input -s number -o output -cr -l -g list.txt or p
 
 ```
 
-## orthomcl_groups_analysis.pl
 ## redundancy_check.pl
 
