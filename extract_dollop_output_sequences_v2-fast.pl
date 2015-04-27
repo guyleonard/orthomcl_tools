@@ -26,7 +26,7 @@ use Getopt::Std;
 
 our $EMPTY          = q{};
 our $WORKING_DIR    = getcwd;
-our $VERSION        = '2015-04-23';
+our $VERSION        = '2015-04-27';
 our $NUM_STATES     = $EMPTY;
 our $DOLLOP_OUTFILE = $EMPTY;
 our $GROUPS_FILE    = $EMPTY;
