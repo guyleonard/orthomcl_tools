@@ -2,22 +2,16 @@
 use strict;
 use warnings;
 
+use autodie;
+use Bio::Index::Fasta;
 use Cwd;               # Gets pathname of current working directory
 use File::Basename;    # Remove path information and extract 8.3 filename
-
-#use Bio::SeqIO;
-#use IO::String;
-#use Bio::SearchIO;
-#use Bio::DB::Fasta;
-use Bio::Index::Fasta;
+use Getopt::Std;
 
 # Analyse the output of OrthoMCL
-# 1a. Assemble all sequences from each Ortholog group into separate files
-# 1b. At this point I can put them into our pipeline to generate alignments, masks, trees.
-
+# 1. Assemble all sequences from each Ortholog group into separate files
 # 2. Presence Absense Grid
-#	Is the genome represented in the ortholog group? 0 or 1
-
+#   Is the genome represented in the ortholog group? 0 or 1
 # 3. Count Grid
 #	How many representations (genes) are Present in each ortholog group 0...n
 
@@ -25,28 +19,28 @@ use Bio::Index::Fasta;
 # Use this command to transpose the output....
 # perl -F, -lane 'for ( 0 .. $#F ) { $rows[$_] .= $F[$_] }; eof && print map "$_\n", @rows' presence_absense_grid_no_blem.csv > presence_absense_grid_no_blem_transposed.csv
 
-our $ORTHO_DIR = "/home/cs02gl/Dropbox/projects/gain_loss/orthomcl";
+our $ORTHO_DIR = "/home/cs02gl/Dropbox/projects/AGRP/jeremy_test/six_genomes/test_orthomcl_pipeline_6_genomes";
 
-my $good_proteins = "$ORTHO_DIR\/goodProteins.fasta";
+my $good_proteins = "$ORTHO_DIR\/blast_dir\/goodProteins.fasta";
 
-my $groups_file = "$ORTHO_DIR\/groups.txt";
+my $groups_file = "$ORTHO_DIR\/groups\/groups.txt";
 
-my $compliant_fasta_dir   = "$ORTHO_DIR\/compliantFasta_50";
+my $compliant_fasta_dir   = "$ORTHO_DIR\/compliant_fasta";
 my @compliant_fasta_files = glob "$compliant_fasta_dir/*.fasta";
 
 # Methods
-&collate_sequences( "$groups_file", "$good_proteins" );
+#&collate_sequences( "$groups_file", "$good_proteins" );
 
-#&presence_absense_grid( "$groups_file", \@compliant_fasta_files );
+&presence_absense_grid( "$groups_file", \@compliant_fasta_files );
 
-#&count_grid( "$groups_file", \@compliant_fasta_files );
+&count_grid( "$groups_file", \@compliant_fasta_files );
 
 sub presence_absense_grid {
     my $groups_file_list = $_[0];
     my @genomes          = @{ $_[1] };
 
     foreach my $file (@genomes) {
-        $file =~ s/$ORTHO_DIR\/compliantFasta_50\///ig;
+        $file =~ s/$ORTHO_DIR\/compliant_fasta\///ig;
         $file =~ s/\.fasta//ig;
     }
     #print "Genomes:\n@genomes\n";
@@ -86,7 +80,7 @@ sub count_grid {
     my $groups_file_list = $_[0];
     my @genomes          = @{ $_[1] };
     foreach my $file (@genomes) {
-        $file =~ s/$ORTHO_DIR\/compliantFasta_50\///ig;
+        $file =~ s/$ORTHO_DIR\/compliant_fasta\///ig;
         $file =~ s/\.fasta//ig;
     }
     open my $presence_absense_file, '>', "$ORTHO_DIR\/count_list.csv";
@@ -165,46 +159,5 @@ sub collate_sequences {
 sub get_id {
     my $header = shift;
     $header =~ /^>(.*)/;
-
-    #$header =~ /^>(\w{4}\|.*)/;
-    #$header =~ /^>.*\bsp\|([A-Z]\d{5}\b)/;
     $1;
 }
-
-# Run makeblastdb for each .fas/.fasta file in a directory
-#sub make_blast_db {
-#    my $good_proteins = shift;
-#    print "makeblastdb - Formating Databases...\n";
-#    my $results = `makeblastdb -in $good_proteins -dbtype prot`;
-#    #my $results = `formatdb -i $good_proteins -p T -o T`;
-#    print "makeblastdb - Finished...\n\n";
-#}
-
-        # A couple of other methods, both horribly slow compared to indexing...
-###
-        #my $gb = Bio::SeqIO->new(
-        #    -file   => "<$good_proteins",
-        #    -format => "fasta"
-        #);
-        #my $fa = Bio::SeqIO->new(
-        #    -file   => ">$ORTHO_DIR\/alignments\/$entries[0]\.fasta",
-        #    -format => "fasta",
-        #    -flush  => 0
-        #);    # go as fast as we can!
-        #while ( my $seq = $gb->next_seq ) {
-        #    #Sorry! Here would be with problem, if we use this "if (grep {$_=$seq->id} @genes_name;"
-        #    $fa->write_seq($seq) if ( grep { $_ eq $seq->id } @accession );
-        #}
-###
-        #my $db = Bio::DB::Fasta->new("$good_proteins");
-        #open my $file_out, '>>', "$ORTHO_DIR\/alignments\/$entries[0]\.fasta";
-        #for (my $x = 0; $x <= $#accession; $x++) {
-        #  print "Getting: $accession[$x]\n";
-        #    my $obj        = $db->get_Seq_by_id("$accession[$x]");
-        #    my $seqstring  = $obj->seq;
-        #    my $desc       = $obj->header;
-        #    #my $seqstring = $db->seq("$accession[$x]");
-        #    #my $desc = $db->header("$accession[$x]");
-        #    print "$desc\n$seqstring\n";
-        #}
-        #close($file_out);
