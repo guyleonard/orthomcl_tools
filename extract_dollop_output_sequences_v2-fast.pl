@@ -333,19 +333,25 @@ sub get_groups {
 #  +----- 1 (taxa_3)
 # reported as "4" or "taxa_2"
 # As you will notice, internal nodes are 'total leaf number' + node number.
-# Total leaf number is equivalent to the number of taxa. This is the first
-# number present in a phylip-like format file...
+# Total leaf number is equivalent to the number of taxa. This is NOT the first
+# number present in a phylip format file...but in my phylip-like it is the third.
 sub report_counts_nodes {
 
     my $dollop_phylip = shift;
+    my $num_nodes     = $EMPTY;
     print "Counting (tree node style)\n";
     open my $dollop_phylip_in, '<', "$dollop_phylip";
 
-    open my $report, '>', "$dollop_phylip\_report\.txt";
-    print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
+    open my $report, '>', "$dollop_phylip\_newstyle_report\.txt";
+    print $report "Node\tShared\tLoss\tGain\n";
 
     foreach my $line (<$dollop_phylip_in>) {
         chomp($line);
+
+        if ( $line =~ m/^\s+\d+\s+\d+\s+(\d+)/ ) {
+            $num_nodes = $1;
+        }
+
         next if ( $line =~ m/^\s+/ );
 
         my @line_array = split( /\t/, $line );
@@ -358,7 +364,18 @@ sub report_counts_nodes {
         my $one_count  = () = $line_array[1] =~ m/[1]/g;
         my $zero_count = () = $line_array[1] =~ m/[0]/g;
 
-        print $report "$nodes[0]\t$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
+        # if the second node is a number then add the $num_nodes to it
+        # if it is not a number, it's a leaf name, so just output that
+        if ( $nodes[1] =~ m/\d+/g ) {
+
+            my $new_node = $nodes[1] + $num_nodes;
+
+            print $report "$new_node\t$dot_count\t$zero_count\t$one_count\n";
+        }
+        else {
+            print $report "$nodes[1]\t$dot_count\t$zero_count\t$one_count\n";
+        }
+
     }
 }
 
@@ -372,7 +389,7 @@ sub report_counts_old_style {
 
     my ( $file, $dir, $ext ) = fileparse $dollop_phylip, '\.*';
 
-    open my $report, '>', "$output_dir\/$file\_report\.txt";
+    open my $report, '>', "$output_dir\/$file\_oldstyle_report\.txt";
     print $report "Node 1\tNode2\tShared\tLoss\tGain\n";
 
     foreach my $line (<$dollop_phylip_in>) {
@@ -402,6 +419,7 @@ sub convert_to_phylip_style {
     my $concat_line          = $EMPTY;
     my @output               = $EMPTY;
     my $count                = 0;
+    my $leaf_count           = 0;
 
     print "Parsing: $dollop_outfile\n";
 
@@ -441,6 +459,8 @@ sub convert_to_phylip_style {
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
                     $concat_line = $concat_line . $node[3] . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10];
+
+                    if ( $node[1] !~ m/\d+/ ) { $leaf_count++; }
                 }
                 else {
 
@@ -449,6 +469,8 @@ sub convert_to_phylip_style {
 
                     # Add the first line of dots, 0s and 1s to the concatenated line
                     $concat_line = $concat_line . $node[4] . $node[5] . $node[6] . $node[7] . $node[8] . $node[9] . $node[10] . $node[11];
+
+                    if ( $node[2] !~ m/\d+/ ) { $leaf_count++; }
                 }
             }
             else {
@@ -458,8 +480,6 @@ sub convert_to_phylip_style {
             }
 
             if ( $count == $number_of_char_lines ) {
-
-                #print $dollop_phylip "$concat_line\n";
                 push( @output, "$concat_line\n" );
 
                 # empty the concatened lines for the next set
@@ -473,10 +493,10 @@ sub convert_to_phylip_style {
     mkdir $out_dir unless -d $out_dir;
 
     open my $dollop_phylip, '>', "$out_dir\/$file\.phy";
-    print $dollop_phylip " $#output $number_of_states\n";
+    print $dollop_phylip " $#output $number_of_states $leaf_count\n";
 
     foreach (@output) {
-        print $dollop_phylip "$_";                             # Print each entry in our array to the file
+        print $dollop_phylip "$_";
     }
     close($dollop_phylip);
 
