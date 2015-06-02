@@ -28,6 +28,8 @@ our $VERBOSE         = $EMPTY;
 ####
 # Use this command to transpose the output....
 # perl -F, -lane 'for ( 0 .. $#F ) { $rows[$_] .= $F[$_] }; eof && print map "$_\n", @rows' presence_absense_grid_no_blem.csv > presence_absense_grid_no_blem_transposed.csv
+# remove the header line
+# perl -ni -e 'print unless $. == 1' filename
 
 # Commandline Options!
 my %options = ();
