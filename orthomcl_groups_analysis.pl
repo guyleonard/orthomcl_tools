@@ -8,6 +8,8 @@ use Cwd;               # Gets pathname of current working directory
 use File::Basename;    # Remove path information and extract 8.3 filename
 use Getopt::Std;
 
+use Data::Dumper;
+
 # Analyse the output of OrthoMCL
 # 1. Assemble all sequences from each Ortholog group into separate files
 # 2. Presence Absense Grid
@@ -28,6 +30,8 @@ our $VERBOSE         = $EMPTY;
 ####
 # Use this command to transpose the output....
 # perl -F, -lane 'for ( 0 .. $#F ) { $rows[$_] .= $F[$_] }; eof && print map "$_\n", @rows' presence_absense_grid_no_blem.csv > presence_absense_grid_no_blem_transposed.csv
+# remove the header line
+# perl -ni -e 'print unless $. == 1' filename
 
 # Commandline Options!
 my %options = ();
@@ -208,6 +212,9 @@ sub collate_sequences {
 # remove the chevron from the accession
 sub get_id {
     my $header = shift;
-    $header =~ /^>(.*)/ism;
-    return $1;
+    chomp($header);
+#	print "IN: $header\t";
+    $header =~ tr />//d;
+#	print "OUT: $header\n";
+    return $header;
 }
