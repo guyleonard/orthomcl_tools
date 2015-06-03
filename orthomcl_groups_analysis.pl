@@ -32,6 +32,8 @@ our $VERBOSE         = $EMPTY;
 # perl -F, -lane 'for ( 0 .. $#F ) { $rows[$_] .= $F[$_] }; eof && print map "$_\n", @rows' presence_absense_grid_no_blem.csv > presence_absense_grid_no_blem_transposed.csv
 # remove the header line
 # perl -ni -e 'print unless $. == 1' filename
+# insert spaces and tabe between names and data
+#sed -i 's/\(\w\{4\}\)\(.*\)/\1      \t\2/g' presence_absense_grid.phy
 
 # Commandline Options!
 my %options = ();
