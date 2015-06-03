@@ -446,10 +446,14 @@ sub convert_to_phylip_style {
 
         if ( $correct_location == 1 ) {
 
-            # if the lines starts with root or 2 spaces followed by a digit
-            if ( $line =~ m/^(root|\s{2}\d+)\s+/gism ) {
+            # if the lines starts with root
+	    # or 2 spaces followed by a digit
+	    # or one space and two digits
+            # or no spaces and three digits
+            if ( $line =~ m/^(root|\s{2}\d+|\s{1}\d+|\d{3})\s+/gism ) {
 
                 print '.';
+		print "if:$line\n";
                 $count = 0;
 
                 # Split line on white space
