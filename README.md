@@ -18,7 +18,22 @@ Run this script to:
 - orthomcl compliantFasta directory
 ```
 
-You will need to convert the presence_absence_grid.csv file into a phylip-like format. To do this you must do four things: 1) transpose the data, 2) remove the first line (header information), 3) insert spaces between the 'taxa' names and 0/1s and 4) add number of taxa and number of 'sites' to the top of the file. There are two perl 'one-liners' for 1) and 2) respectively, a sed command for 3) and 4) you can do manually.
+You will need to convert the presence_absence_grid.csv file into a phylip-like format. To do this you must do four things:
+ 1. transpose the data,
+ 2. remove the first line (header information),
+ 3. insert spaces between the 'taxa' names and 0/1s and
+ 4. add number of taxa and number of 'sites' to the top of the file.
+
+To do this:
+```
+ 1. perl -F, -lane 'for ( 0 .. $#F ) { $rows[$_] .= $F[$_] }; eof && print map "$_\n", @rows' presence_absense_grid.csv > presence_absense_grid_transposed.csv
+ 2. perl -ni -e 'print unless $. == 1' presence_absense_grid_transposed.csv
+ 3. cp presence_absense_grid_transposed.csv presence_absense_grid.phy
+ 4. sed -i 's/\(\w\{4\}\)\(.*\)/\1      \t\2/g' presence_absense_grid.phy
+ 5. Open in your favourite text editor and add " XX YYYY", where XX = number of taxa, and YYYY = number of ortholog groups
+```
+
+There are two perl 'one-liners' for 1) and 2) respectively, a sed command for 3) and 4) you can do manually.
 
 Before running extract_dollop_output_sequences_v2-fast.pl you will need to run 'dollop' from the PHYLIP package. This requires the phylip-like file you created in the step above, and possibly a user-specified tree topology.
 
