@@ -1,5 +1,5 @@
 # orthomcl_tools
-A couple of tools I find indispensable for post orthomcl down-stream analysis.
+A couple of tools I made for post orthoMCL/orthAgogue down-stream analysis. The first tool computes a set of CSV files with presence/absence or 'count' information relating to your orthologue groups and taxa. The second tool allows you to take the output of a DOLLOP analysis along with the orthologue groups and plot them to locations on the tree topology as a list and set of alignments for each node. The final two scripts allow you to plot this information in a image created in R using ggtree.
 
 ## orthomcl_groups_analysis.pl
 
@@ -19,6 +19,8 @@ Run this script to:
 ```
 
 You will need to convert the presence_absence_grid.csv file into a phylip-like format. To do this you must do four things: 1) transpose the data, 2) remove the first line (header information), 3) insert spaces between the 'taxa' names and 0/1s and 4) add number of taxa and number of 'sites' to the top of the file. There are two perl 'one-liners' for 1) and 2) respectively, a sed command for 3) and 4) you can do manually.
+
+Before running extract_dollop_output_sequences_v2-fast.pl you will need to run 'dollop' from the PHYLIP package. This requires the phylip-like file you created in the step above, and possibly a user-specified tree topology.
 
 ## extract_dollop_output_sequences_v2-fast.pl
 
