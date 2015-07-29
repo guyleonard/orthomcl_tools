@@ -4,6 +4,7 @@ A couple of tools I made for post orthoMCL/orthAgogue down-stream analysis. The 
 ## orthomcl_groups_analysis.pl
 
 Run this script to:
+
 1. Collate all sequences from each ortholog group into separate FASTA files.
 2. Generate a Presence Absense Grid
   1. Is the taxa/genome represented in the ortholog group? 0 or 1
