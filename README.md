@@ -37,7 +37,14 @@ Before running extract_dollop_output_sequences_v2-fast.pl you will need to run '
 
 ## extract_dollop_output_sequences_v2-fast.pl
 
-A program to take the "outfile" from a PHYLIP DOLLOP run and parse the output in to a more useful format. It requires two pieces of information: 1) the "outfile", and 2) the number of states being tested. For running with OrthoMCL data you will also need: 1) a list of orthogroup names, and 2) a directory with the *.fasta sequences of each orthogroup
+A program to take the "outfile" from a PHYLIP DOLLOP run and parse the output in to a more useful format. It requires at least two pieces of information:
+ 1. the "outfile" from DOLLOP
+ 2. the number of states being tested (i.e. number of orthologs)
+
+For running with OrthoMCL data you will also need:
+ 1. a list of orthogroup names (edit groups.txt accordingly) 
+ 2. a directory with the *.fasta sequences of each orthogroup (from the previous script)
+
 The program outputs four different options:
 
 1. A phylip-like output file, parsed from the state information in the "outfile" from dollop.
@@ -70,6 +77,18 @@ Sequence Collation:
 e.g. Equivalent: program.pl -i input -s number -o output -cr -l -g list.txt or program.pl -i input -s number -o output -rl -g list.txt -p phylip-like.phy
 
 ```
+
+## add_internal_node_labels.pl
+
+For the R script below to work your tree needs to have it's internal nodes labelled as well as the leafs. This will add numbers to all the internal nodes, you need to specifiy how many leafs nodes (i.e. taxa) you have.
+
+## plot_tree_gains_loss_in_R.r
+
+Requires 
+ 1. ggplot2
+ 2. ggtree
+ 3. internally labelled tree
+ 4. 'new-style' output from extract_dollop_output_sequences_v2-fast.pl
 
 ## redundancy_check.pl
 
