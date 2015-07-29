@@ -18,6 +18,8 @@ Run this script to:
 - orthomcl compliantFasta directory
 ```
 
+You will need to convert the presence_absence_grid.csv file into a phylip-like format. To do this you must do four things: 1) transpose the data, 2) remove the first line (header information), 3) insert spaces between the 'taxa' names and 0/1s and 4) add number of taxa and number of 'sites' to the top of the file. There are two perl 'one-liners' for 1) and 2) respectively, a sed command for 3) and 4) you can do manually.
+
 ## extract_dollop_output_sequences_v2-fast.pl
 
 A program to take the "outfile" from a PHYLIP DOLLOP run and parse the output in to a more useful format. It requires two pieces of information: 1) the "outfile", and 2) the number of states being tested. For running with OrthoMCL data you will also need: 1) a list of orthogroup names, and 2) a directory with the *.fasta sequences of each orthogroup
