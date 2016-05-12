@@ -1,6 +1,10 @@
 # orthomcl_tools
 A couple of tools I made for post orthoMCL/orthAgogue down-stream analysis. The first tool computes a set of CSV files with presence/absence or 'count' information relating to your orthologue groups and taxa. The second tool allows you to take the output of a DOLLOP analysis along with the orthologue groups and plot them to locations on the tree topology as a list and set of alignments for each node. The final two scripts allow you to plot this information in a image created in R using ggtree.
 
+## Citation
+
+[![DOI](https://zenodo.org/badge/3666/guyleonard/orthomcl_tools.svg)](https://zenodo.org/badge/latestdoi/3666/guyleonard/orthomcl_tools)
+
 ## orthomcl_groups_analysis.pl
 
 Run this script to:
