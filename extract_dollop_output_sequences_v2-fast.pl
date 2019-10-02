@@ -370,7 +370,7 @@ sub report_counts_nodes {
 
         # if the second node is a number then add the $num_nodes to it
         # if it is not a number, it's a leaf name, so just output that
-        if ( $nodes[1] =~ m/\d+/g ) {
+        if ( $nodes[1] =~ m/^\d+$/ ) {
 
             my $new_node = $nodes[1] + $num_nodes;
 
